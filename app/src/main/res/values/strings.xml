@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Search Pic</string>
     <string name="image">Image</string>
+    <string name="order_by">Order By: </string>
+    <string name="content_filter">Content Filter:</string>
+    <string name="color">Color:</string>
+    <string name="orientation">Orientation:</string>
 </resources>

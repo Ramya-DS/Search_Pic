@@ -8,5 +8,5 @@ class StateRestoringViewModel(application: Application) : AndroidViewModel(appli
 
     var resultList = mutableListOf<ImageDetails>()
     var mQuery: String = ""
-    var scrollPosition: Int = 0
+    var optionQueryMap = HashMap<String, String>()
 }
