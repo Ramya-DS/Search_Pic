@@ -85,7 +85,7 @@ class ImageAdapter(val onImageClickedListener: OnImageClickedListener) :
             var mImage: ImageDetails? = null
             for (key in bundle.keySet()) {
                 if (key == "newNote")
-                    mImage = bundle.getSerializable(key) as ImageDetails
+                    mImage = bundle.getParcelable(key)
             }
             mImage?.let {
                 holder.image = mImage

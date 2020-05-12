@@ -513,7 +513,7 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
                     networkErrorDialog()
             }
             .setNegativeButton("Exit") { dialog, which ->
-//                dialog.dismiss()
+                //                dialog.dismiss()
                 finishAffinity()
             }.setCancelable(false)
             .create()
