@@ -9,32 +9,49 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:elevation="10dp"
         android:orientation="vertical"
         tools:context=".search.SearchActivity">
 
-        <LinearLayout
+        <com.google.android.material.appbar.MaterialToolbar
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:orientation="horizontal">
+            android:background="@color/colorPrimary"
+            app:navigationIcon="@drawable/ic_icon"
+            app:title="Search Pic"
+            app:titleTextColor="#ffffff" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
 
             <androidx.appcompat.widget.SearchView
                 android:id="@+id/search_bar"
-                android:layout_width="wrap_content"
-                android:layout_height="?attr/actionBarSize"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
+                android:layout_weight="1"
                 android:elevation="2dp"
                 android:focusableInTouchMode="true"
+                android:gravity="bottom"
                 app:defaultQueryHint="Search here.."
                 app:iconifiedByDefault="false"
                 app:searchIcon="@drawable/search_icon" />
 
-            <ImageView
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/filter"
                 android:layout_width="wrap_content"
-                android:layout_height="?attr/actionBarSize"
-                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginEnd="5dp"
                 android:elevation="2dp"
-                android:src="@drawable/ic_filter" />
+                app:backgroundTint="@color/colorAccent"
+                android:backgroundTint="@color/colorAccent"
+                android:tint="@color/colorAccent"
+                android:src="@drawable/ic_filter"
+                app:fabSize="mini" />
 
         </LinearLayout>
 
@@ -42,9 +59,9 @@
             android:id="@+id/image_recycler"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:backgroundTint="#f0f0f0"
             android:padding="5dp"
             android:scrollbars="vertical" />
-
     </LinearLayout>
 
     <com.google.android.material.navigation.NavigationView
@@ -53,7 +70,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="end">
 
-        <include layout="@layout/side_sheet_layout"/>
+        <include layout="@layout/side_sheet_layout" />
 
     </com.google.android.material.navigation.NavigationView>
 

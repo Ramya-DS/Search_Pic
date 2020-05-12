@@ -1,11 +1,18 @@
 package com.example.searchpic.search
 
-import android.content.res.Resources
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
+import android.content.res.Configuration
+import android.net.*
+import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.View
-import android.widget.*
+import android.widget.RadioButton
+import android.widget.RadioGroup
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
@@ -14,10 +21,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.searchpic.R
+import com.example.searchpic.imagedisplay.ImageDisplayActivity
 import com.example.searchpic.search.datamodel.SearchResult
+import com.example.searchpic.util.OnImageClickedListener
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import retrofit2.Call
@@ -25,18 +35,20 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.lang.Exception
 
 
-class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
+class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImageClickedListener {
 
     private lateinit var adapter: ImageAdapter
-    private var mQuery: String = ""
     private var loading = true
     private lateinit var recyclerView: RecyclerView
     private lateinit var viewModel: StateRestoringViewModel
     private lateinit var searchView: SearchView
     private var end = false
     private var currentOptions = HashMap<String, String>()
+    private lateinit var filter: FloatingActionButton
+    private var mQuery: String = ""
 
     companion object {
         val ORDER_BY = arrayListOf("relevant", "latest")
@@ -82,19 +94,25 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
 
         val apiResponse = retrofit.create(ApiResponse::class.java)
 
+        filter = findViewById(R.id.filter)
+        filter.hide()
         searchBarInitialisation(apiResponse)
 
         recyclerViewInitialisation(apiResponse)
 
         sideSheetInitialisation(apiResponse)
 
+        var mQuery = ""
         if (viewModel.optionQueryMap["query"] != null) {
             mQuery = viewModel.optionQueryMap["query"]!!
         }
 
         if (viewModel.resultList.isNotEmpty() && mQuery != "") {
+            filter.show()
             (recyclerView.adapter as ImageAdapter).setImageList(viewModel.resultList)
         }
+
+        networkErrorDialog()
     }
 
     override fun onResume() {
@@ -115,13 +133,16 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
         searchView.isFocusable = false
         val displayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(displayMetrics)
-        searchView.maxWidth = (displayMetrics.widthPixels * 0.85).toInt()
+        searchView.maxWidth = (displayMetrics.widthPixels * 0.90).toInt()
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 query?.let {
                     if (it.trim().isNotEmpty()) {
+                        viewModel.mQuery = it
+                        clearFilterOptions()
                         parametersInitialised(it)
+                        (recyclerView.adapter as ImageAdapter).resultList.clear()
                         fetchSearchResult(viewModel.optionQueryMap, apiResponse)
                     } else {
                         Toast.makeText(
@@ -135,12 +156,16 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
+                newText?.let {
+                    mQuery = it
+                }
                 return false
             }
         })
     }
 
     private fun parametersInitialised(query: String) {
+        viewModel.resultList.clear()
         viewModel.optionQueryMap["query"] = query
         viewModel.optionQueryMap["page"] = "1"
         viewModel.optionQueryMap["per_page"] = "50"
@@ -151,12 +176,15 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
 
     private fun recyclerViewInitialisation(apiResponse: ApiResponse) {
         recyclerView = findViewById(R.id.image_recycler)
-        val mLayoutManager = StaggeredGridLayoutManager(2, 1)
+        val spanCount =
+            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) 2 else 3
+        val mLayoutManager = StaggeredGridLayoutManager(spanCount, 1)
         mLayoutManager.gapStrategy =
             StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS;
         recyclerView.layoutManager = mLayoutManager
         recyclerView.setHasFixedSize(true)
-        adapter = ImageAdapter()
+        recyclerView.itemAnimator = null
+        adapter = ImageAdapter(this)
         recyclerView.adapter = adapter
 
         var pastVisibleItems = 0
@@ -187,16 +215,17 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
     }
 
     private fun sideSheetInitialisation(apiResponse: ApiResponse) {
-        val filter = findViewById<ImageView>(R.id.filter)
+
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         filter.setOnClickListener {
+            searchView.clearFocus()
+            searchView.setQuery(viewModel.mQuery, false)
             drawerLayout.openDrawer(GravityCompat.END)
         }
         val filterButton: MaterialButton = findViewById(R.id.filter_button)
 
 
         filterButton.setOnClickListener {
-            Log.d("Hash map", viewModel.optionQueryMap.toString())
             viewModel.optionQueryMap["page"] = "1"
             currentOptions["order_by"]?.let {
                 viewModel.optionQueryMap["order_by"] = it
@@ -223,7 +252,6 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         (recyclerView.adapter as ImageAdapter).resultList.let {
-            Log.d("check", "on save ${it.size}")
             viewModel.resultList.clear()
             viewModel.resultList.addAll(it)
         }
@@ -233,24 +261,25 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
         val call = apiResponse.getImageResultsList(parameters)
         call.enqueue(object : Callback<SearchResult> {
             override fun onFailure(call: Call<SearchResult>, t: Throwable) {
-                Toast.makeText(applicationContext, "Error", Toast.LENGTH_SHORT).show()
-                //check for connectivity issues and display
+//                Toast.makeText(applicationContext, "Error", Toast.LENGTH_SHORT).show()
+                networkErrorDialog()
             }
 
             override fun onResponse(call: Call<SearchResult>, response: Response<SearchResult>) {
                 if (response.isSuccessful) {
-                    Log.d("response", response.body()?.results.toString())
-                    if (parameters["page"] == "1")
-                        displayFirstPageOfSearchResult(response.body())
-                    else if (parameters["page"]!!.toInt() != response.body()!!.totalPages)
-                        displayNextSetOfSearchResults(response.body())
-                    else {
-                        Toast.makeText(
-                            this@SearchActivity,
-                            "End of search Results",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        end = true
+                    when {
+                        parameters["page"] == "1" -> displayFirstPageOfSearchResult(response.body())
+                        parameters["page"]!!.toInt() != response.body()!!.totalPages -> displayNextSetOfSearchResults(
+                            response.body()
+                        )
+                        else -> {
+                            Toast.makeText(
+                                this@SearchActivity,
+                                "End of search Results",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            end = true
+                        }
                     }
                 } else {
                     Toast.makeText(
@@ -265,13 +294,17 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
 
     private fun displayFirstPageOfSearchResult(result: SearchResult?) {
         result?.let {
-            adapter.setImageList(result.results)
+            if (it.results.isNotEmpty()) {
+                adapter.setImageList(it.results)
+                filter.show()
+            } else
+                Toast.makeText(this, "No matches found", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun displayNextSetOfSearchResults(result: SearchResult?) {
         result?.let {
-            adapter.appendImageList(result.results)
+            adapter.appendImageList(it.results)
             loading = true
         }
     }
@@ -282,12 +315,10 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
             when (view.getId()) {
                 R.id.relevant ->
                     if (checked) {
-                        Log.d("Options", "relevant")
                         currentOptions["order_by"] = ORDER_BY[0]
                     }
                 R.id.latest ->
                     if (checked) {
-                        Log.d("Options", "latest")
                         currentOptions["order_by"] = ORDER_BY[1]
                     }
             }
@@ -300,12 +331,10 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
             when (view.getId()) {
                 R.id.high ->
                     if (checked) {
-                        Log.d("Options", "high")
                         currentOptions["content_filter"] = CONTENT_FILTER[1]
                     }
                 R.id.low ->
                     if (checked) {
-                        Log.d("Options", "low")
                         currentOptions["content_filter"] = CONTENT_FILTER[0]
                     }
             }
@@ -318,68 +347,57 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
             when (view.id) {
                 R.id.black_and_white -> {
                     if (checked) {
-                        Log.d("Options", "black_and_white")
                         currentOptions["color"] = COLOR[0]
                     } else
                         currentOptions.remove("color")
                 }
                 R.id.black ->
                     if (checked) {
-                        Log.d("Options", "black")
                         currentOptions["color"] = COLOR[1]
                     } else
                         currentOptions.remove("color")
                 R.id.white ->
                     if (checked) {
-                        Log.d("Options", "white")
                         currentOptions["color"] = COLOR[2]
                     } else
                         currentOptions.remove("color")
                 R.id.yellow ->
                     if (checked) {
-                        Log.d("Options", "yellow")
                         currentOptions["color"] = COLOR[3]
                     } else
                         currentOptions.remove("color")
                 R.id.orange ->
                     if (checked) {
-                        Log.d("Options", "orange")
                         currentOptions["color"] = COLOR[4]
                     } else
                         currentOptions.remove("color")
                 R.id.red ->
                     if (checked) {
-                        Log.d("Options", "red")
                         currentOptions["color"] = COLOR[5]
                     } else
                         currentOptions.remove("color")
                 R.id.purple ->
                     if (checked) {
-                        Log.d("Options", "purple")
                         currentOptions["color"] = COLOR[6]
                     } else
                         currentOptions.remove("color")
                 R.id.magenta ->
                     if (checked) {
-                        Log.d("Options", "magenta")
                         currentOptions["color"] = COLOR[7]
                     } else
                         currentOptions.remove("color")
                 R.id.green ->
                     if (checked) {
-                        Log.d("Options", "green")
                         currentOptions["color"] = COLOR[8]
                     } else
                         currentOptions.remove("color")
                 R.id.teal ->
                     if (checked) {
-                        Log.d("Options", "teal")
                         currentOptions["color"] = COLOR[9]
                     } else
                         currentOptions.remove("color")
                 R.id.blue ->
                     if (checked) {
-                        Log.d("Options", "blue")
                         currentOptions["color"] = COLOR[10]
                     } else
                         currentOptions.remove("color")
@@ -393,19 +411,16 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
             when (view.id) {
                 R.id.landscape ->
                     if (checked) {
-                        Log.d("Options", "landscape")
                         currentOptions["orientation"] = ORIENTATION[0]
                     } else
                         currentOptions.remove("orientation")
                 R.id.portrait ->
                     if (checked) {
-                        Log.d("Options", "portrait")
                         currentOptions["orientation"] = ORIENTATION[1]
                     } else
                         currentOptions.remove("orientation")
                 R.id.squarish ->
                     if (checked) {
-                        Log.d("Options", "squarish")
                         currentOptions["orientation"] = ORIENTATION[2]
                     } else
                         currentOptions.remove("orientation")
@@ -461,7 +476,87 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener {
         }
     }
 
+    private fun clearFilterOptions() {
+        findViewById<RadioGroup>(R.id.order_by_group)?.let {
+            it.clearCheck()
+            it.check(R.id.relevant)
+        }
+
+        findViewById<RadioGroup>(R.id.content_group)?.let {
+            it.clearCheck()
+            it.check(R.id.low)
+        }
+
+        findViewById<ChipGroup>(R.id.color_group).clearCheck()
+        findViewById<ChipGroup>(R.id.orientation_group).clearCheck()
+    }
+
     override fun onDrawerOpened(drawerView: View) {
 
+    }
+
+    override fun onImageClicked(imageBundle: Bundle) {
+        val intent = Intent(this, ImageDisplayActivity::class.java)
+        intent.putExtra("image", imageBundle)
+        startActivity(intent)
+    }
+
+    private fun networkErrorDialog() {
+
+        val alertDialog = AlertDialog.Builder(this).setTitle("No internet connection")
+            .setMessage("Internet is essential for the working of the application.Connect to the internet.")
+            .setPositiveButton("Refresh") { _: DialogInterface, i: Int ->
+                if (checkConnectivity()) {
+                    loading = true
+                    return@setPositiveButton
+                } else
+                    networkErrorDialog()
+            }
+            .setNegativeButton("Exit") { dialog, which ->
+//                dialog.dismiss()
+                finishAffinity()
+            }.setCancelable(false)
+            .create()
+
+        if (checkConnectivity())
+            alertDialog.dismiss()
+        else
+            alertDialog.show()
+    }
+
+    private fun checkConnectivity(): Boolean {
+        var isConnected: Boolean
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+            val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
+            isConnected = activeNetwork?.isConnectedOrConnecting == true
+        } else {
+            try {
+                val builder = NetworkRequest.Builder()
+                cm.registerDefaultNetworkCallback(object :
+                    ConnectivityManager.NetworkCallback() {
+                    override fun onLost(network: Network) {
+                        super.onLost(network)
+                        isConnected = false
+                    }
+
+                    override fun onAvailable(network: Network) {
+                        super.onAvailable(network)
+                        isConnected = true
+                    }
+                })
+
+                isConnected = false
+            } catch (e: Exception) {
+                isConnected = false
+            }
+        }
+
+        return isConnected
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        finishAffinity()
     }
 }

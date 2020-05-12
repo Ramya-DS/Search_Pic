@@ -1,6 +1,7 @@
 package com.example.searchpic.search
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,17 +15,37 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.example.searchpic.R
 import com.example.searchpic.search.datamodel.ImageDetails
+import com.example.searchpic.util.OnImageClickedListener
 
-class ImageAdapter : RecyclerView.Adapter<ImageAdapter.ImageViewHolder>() {
+class ImageAdapter(val onImageClickedListener: OnImageClickedListener) :
+    RecyclerView.Adapter<ImageAdapter.ImageViewHolder>() {
 
     var resultList = mutableListOf<ImageDetails>()
     private val set = ConstraintSet()
 
-    class ImageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class ImageViewHolder(view: View) : RecyclerView.ViewHolder(view), View.OnClickListener {
         val imageView: ImageView = view.findViewById(R.id.imgSource)
         val mConstraintLayout: ConstraintLayout = view.findViewById(R.id.parentConstraint)
         var image: ImageDetails? = null
 
+        init {
+            mConstraintLayout.setOnClickListener(this)
+        }
+
+        override fun onClick(v: View?) {
+            image?.let {
+                Log.d("image", image.toString())
+                val bundle = Bundle().apply {
+                    this.putString("id", it.id)
+                    this.putString("raw", it.urls.regular)
+                    this.putString("description", it.description)
+                    this.putString("download", it.links.download)
+                    this.putInt("width", it.width)
+                    this.putInt("height", it.height)
+                }
+                onImageClickedListener.onImageClicked(bundle)
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ImageViewHolder(
@@ -131,7 +152,7 @@ class ImageAdapter : RecyclerView.Adapter<ImageAdapter.ImageViewHolder>() {
             val diffBundle = Bundle()
 
             if (oldNote.id != newNote.id) {
-                diffBundle.putSerializable("newNote", newNote)
+                diffBundle.putParcelable("newNote", newNote)
             }
 
             return if (diffBundle.size() == 0) null else diffBundle

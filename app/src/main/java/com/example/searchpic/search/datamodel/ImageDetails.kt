@@ -1,8 +1,10 @@
 package com.example.searchpic.search.datamodel
 
+import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
-import java.io.Serializable
+import kotlinx.android.parcel.Parcelize
 
+@Parcelize
 data class ImageDetails(
     @SerializedName("id") val id: String,
     @SerializedName("created_at") val created_at: String,
@@ -16,4 +18,4 @@ data class ImageDetails(
     @SerializedName("current_user_collections") val current_user_collections: List<String>,
     @SerializedName("urls") val urls: Urls,
     @SerializedName("links") val links: Links
-) : Serializable
+) : Parcelable

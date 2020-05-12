@@ -13,7 +13,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/order_by" />
+            android:text="@string/order_by"
+            android:textStyle="bold"
+            android:textColor="@color/colorPrimary"
+            android:textSize="14sp"/>
 
         <RadioGroup
             android:layout_width="match_parent"
@@ -43,7 +46,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/content_filter" />
+            android:text="@string/content_filter"
+            android:textStyle="bold"
+            android:textColor="@color/colorPrimary"
+            android:textSize="14sp"/>
 
         <RadioGroup
             android:layout_width="match_parent"
@@ -73,6 +79,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="@color/colorPrimary"
+            android:textSize="14sp"
+            android:textStyle="bold"
             android:text="@string/color" />
 
         <com.google.android.material.chip.ChipGroup
@@ -92,6 +101,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="Black and White"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -104,6 +115,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="Black"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -116,6 +129,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="White"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconEnabled="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -128,6 +143,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="Yellow"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -140,6 +157,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="Orange"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -152,6 +171,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="Red"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -164,6 +185,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="Purple"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -176,6 +199,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="Magenta"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -188,6 +213,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="Green"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -200,6 +227,8 @@
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
                 android:text="Teal"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 app:checkedIconVisible="false"
                 app:chipBackgroundColor="@color/bg_chip_state_list" />
 
@@ -208,6 +237,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checkable="true"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:onClick="onColorOptionsClicked"
@@ -221,6 +252,8 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="@color/colorPrimary"
+            android:textSize="14sp"
             android:text="@string/orientation" />
 
         <com.google.android.material.chip.ChipGroup
@@ -238,6 +271,8 @@
                 android:checkable="true"
                 android:clickable="true"
                 android:focusable="true"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 android:onClick="onOrientationOptionsClicked"
                 android:text="Landscape"
                 app:checkedIconVisible="false"
@@ -250,6 +285,8 @@
                 android:checkable="true"
                 android:clickable="true"
                 android:focusable="true"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 android:onClick="onOrientationOptionsClicked"
                 android:text="Portrait"
                 app:checkedIconVisible="false"
@@ -260,6 +297,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checkable="true"
+                app:chipStrokeColor="@color/colorAccent"
+                app:chipStrokeWidth="1dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:onClick="onOrientationOptionsClicked"
@@ -272,6 +311,7 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/filter_button"
             android:layout_width="wrap_content"
+            app:cornerRadius="10dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="10dp"
