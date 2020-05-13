@@ -16,12 +16,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.example.searchpic.R
+import com.example.searchpic.search.LoadImage
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
+import java.lang.ref.WeakReference
 
 
 class ImageDisplayActivity : AppCompatActivity() {
@@ -62,42 +62,7 @@ class ImageDisplayActivity : AppCompatActivity() {
                         startActivity(i)
                     }
                     .show()
-
-
-//                val notificationManager =
-//                    getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-//
-//                val mBuilder = NotificationCompat.Builder(applicationContext, "notify_001")
-//
-//                val bigText = NotificationCompat.BigTextStyle()
-//                bigText.bigText("Image is located in downloads folder of the device")
-//                bigText.setBigContentTitle("Download")
-//                bigText.setSummaryText("Image Download Complete")
-//
-//                mBuilder.setSmallIcon(R.mipmap.ic_launcher_round)
-//                mBuilder.setContentTitle("Download")
-//                mBuilder.setContentText("Image Download Complete.")
-//                mBuilder.priority = Notification.PRIORITY_MAX
-//                mBuilder.setStyle(bigText)
-//
-//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                    val channelId = "0"
-//                    val channel = NotificationChannel(
-//                        channelId,
-//                        "Download",
-//                        NotificationManager.IMPORTANCE_HIGH
-//                    )
-//                    notificationManager.createNotificationChannel(channel)
-//                    mBuilder.setChannelId(channelId)
-//                }
-//
-//
-//                notificationManager.notify(0, mBuilder.build())
-
-
             }
-
-
         }
     }
 
@@ -116,7 +81,7 @@ class ImageDisplayActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         toolbar.setNavigationOnClickListener {
-            finish()
+            supportFinishAfterTransition()
         }
 
         registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
@@ -199,11 +164,7 @@ class ImageDisplayActivity : AppCompatActivity() {
 
     private fun setImage() {
         val imageDisplay: ImageView = findViewById(R.id.image_display)
-        Glide.with(this)
-            .load(raw)
-            .placeholder(R.drawable.placeholder)
-            .transition(DrawableTransitionOptions.withCrossFade())
-            .into(imageDisplay)
+        LoadImage(WeakReference(imageDisplay), WeakReference(this)).execute(raw)
 
         val constraintLayout = findViewById<ConstraintLayout>(R.id.displayConstraint)
         val ratio = String.format("%d:%d", width, height)

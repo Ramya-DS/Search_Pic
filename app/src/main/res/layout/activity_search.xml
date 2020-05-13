@@ -46,22 +46,29 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:layout_marginEnd="5dp"
-                android:elevation="2dp"
-                app:backgroundTint="@color/colorAccent"
                 android:backgroundTint="@color/colorAccent"
-                android:tint="@color/colorAccent"
+                android:elevation="2dp"
                 android:src="@drawable/ic_filter"
+                android:tint="@color/colorAccent"
+                app:backgroundTint="@color/colorAccent"
                 app:fabSize="mini" />
 
         </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/image_recycler"
+        <TextView
+            android:id="@+id/searchInfo"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:backgroundTint="#f0f0f0"
-            android:padding="5dp"
-            android:scrollbars="vertical" />
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:freezesText="true"
+            android:textColor="@color/colorPrimaryDark" />
+
+        <FrameLayout
+            android:id="@+id/container"
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent"
+            android:padding="5dp" />
+
     </LinearLayout>
 
     <com.google.android.material.navigation.NavigationView

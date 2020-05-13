@@ -3,52 +3,56 @@ package com.example.searchpic.search
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.res.Configuration
-import android.net.*
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkInfo
+import android.net.NetworkRequest
 import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.View
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.searchpic.R
 import com.example.searchpic.imagedisplay.ImageDisplayActivity
 import com.example.searchpic.search.datamodel.SearchResult
 import com.example.searchpic.util.OnImageClickedListener
+import com.example.searchpic.util.OnLoadMoreItemsListener
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.lang.Exception
 
 
-class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImageClickedListener {
+class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImageClickedListener,
+    OnLoadMoreItemsListener {
 
-    private lateinit var adapter: ImageAdapter
-    private var loading = true
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var viewModel: StateRestoringViewModel
+    private lateinit var viewModel: SearchActivityViewModel
     private lateinit var searchView: SearchView
-    private var end = false
+    lateinit var apiResponse: ApiResponse
     private var currentOptions = HashMap<String, String>()
     private lateinit var filter: FloatingActionButton
     private var mQuery: String = ""
+    lateinit var textInfo: TextView
+    var resultFragment: SearchResultsFragment? = null
 
     companion object {
         val ORDER_BY = arrayListOf("relevant", "latest")
@@ -74,6 +78,8 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
 
+        textInfo = findViewById(R.id.searchInfo)
+
         viewModelInitialisation()
 
         val client = OkHttpClient.Builder().addInterceptor { chain ->
@@ -92,27 +98,23 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
-        val apiResponse = retrofit.create(ApiResponse::class.java)
+        apiResponse = retrofit.create(ApiResponse::class.java)
 
         filter = findViewById(R.id.filter)
         filter.hide()
-        searchBarInitialisation(apiResponse)
-
-        recyclerViewInitialisation(apiResponse)
-
-        sideSheetInitialisation(apiResponse)
-
-        var mQuery = ""
-        if (viewModel.optionQueryMap["query"] != null) {
-            mQuery = viewModel.optionQueryMap["query"]!!
-        }
-
-        if (viewModel.resultList.isNotEmpty() && mQuery != "") {
-            filter.show()
-            (recyclerView.adapter as ImageAdapter).setImageList(viewModel.resultList)
-        }
+        searchBarInitialisation()
+        sideSheetInitialisation()
 
         networkErrorDialog()
+
+        if (savedInstanceState != null) {
+            supportFragmentManager.findFragmentByTag("Result")?.let {
+                resultFragment = it as SearchResultsFragment
+                resultFragment?.onLoadMoreItemsListener = this
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.container, it).commit()
+            }
+        }
     }
 
     override fun onResume() {
@@ -124,10 +126,10 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
         viewModel = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(application)
-        ).get(StateRestoringViewModel::class.java)
+        ).get(SearchActivityViewModel::class.java)
     }
 
-    private fun searchBarInitialisation(apiResponse: ApiResponse) {
+    private fun searchBarInitialisation() {
 
         searchView = findViewById(R.id.search_bar)
         searchView.isFocusable = false
@@ -141,9 +143,12 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
                     if (it.trim().isNotEmpty()) {
                         viewModel.mQuery = it
                         clearFilterOptions()
+                        removeNoResultFragment()
+                        removeDisplayResultFragment()
+                        displayLoadingFragment()
                         parametersInitialised(it)
-                        (recyclerView.adapter as ImageAdapter).resultList.clear()
-                        fetchSearchResult(viewModel.optionQueryMap, apiResponse)
+
+                        fetchSearchResult()
                     } else {
                         Toast.makeText(
                             this@SearchActivity,
@@ -165,61 +170,27 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     }
 
     private fun parametersInitialised(query: String) {
-        viewModel.resultList.clear()
         viewModel.optionQueryMap["query"] = query
         viewModel.optionQueryMap["page"] = "1"
         viewModel.optionQueryMap["per_page"] = "50"
         viewModel.optionQueryMap.remove("color")
         viewModel.optionQueryMap.remove("content_filter")
         viewModel.optionQueryMap.remove("order_by")
+        viewModel.optionQueryMap.remove("orientation")
     }
 
-    private fun recyclerViewInitialisation(apiResponse: ApiResponse) {
-        recyclerView = findViewById(R.id.image_recycler)
-        val spanCount =
-            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) 2 else 3
-        val mLayoutManager = StaggeredGridLayoutManager(spanCount, 1)
-        mLayoutManager.gapStrategy =
-            StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS;
-        recyclerView.layoutManager = mLayoutManager
-        recyclerView.setHasFixedSize(true)
-        recyclerView.itemAnimator = null
-        adapter = ImageAdapter(this)
-        recyclerView.adapter = adapter
-
-        var pastVisibleItems = 0
-        var visibleItemCount: Int
-        var totalItemCount: Int
-
-        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                visibleItemCount = mLayoutManager.childCount
-                totalItemCount = mLayoutManager.itemCount
-                var firstVisibleItems: IntArray? = null
-                firstVisibleItems = mLayoutManager.findFirstVisibleItemPositions(firstVisibleItems);
-                if (firstVisibleItems != null && firstVisibleItems.isNotEmpty()) {
-                    pastVisibleItems = firstVisibleItems[0]
-                }
-
-                if (loading && !end) {
-                    if ((visibleItemCount + pastVisibleItems) >= totalItemCount) {
-                        loading = false
-                        viewModel.optionQueryMap["page"] =
-                            (viewModel.optionQueryMap["page"]!!.toInt() + 1).toString()
-                        fetchSearchResult(viewModel.optionQueryMap, apiResponse)
-                    }
-                }
-            }
-        })
-    }
-
-    private fun sideSheetInitialisation(apiResponse: ApiResponse) {
+    private fun sideSheetInitialisation() {
 
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         filter.setOnClickListener {
             searchView.clearFocus()
-            searchView.setQuery(viewModel.mQuery, false)
+            if (mQuery == "")
+                searchView.setQuery(viewModel.mQuery, false)
+            else if (mQuery != viewModel.optionQueryMap["query"]) {
+                viewModel.optionQueryMap["query"] = mQuery
+                viewModel.mQuery = mQuery
+                removeDisplayResultFragment()
+            }
             drawerLayout.openDrawer(GravityCompat.END)
         }
         val filterButton: MaterialButton = findViewById(R.id.filter_button)
@@ -234,14 +205,20 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
                 viewModel.optionQueryMap["content_filter"] = it
             }
             currentOptions["color"]?.let {
-                viewModel.optionQueryMap["color"] = it
+                if (it == "deselect") {
+                    viewModel.optionQueryMap.remove("color")
+                } else
+                    viewModel.optionQueryMap["color"] = it
             }
             currentOptions["orientation"]?.let {
-                viewModel.optionQueryMap["orientation"] = it
+                if (it == "deselect") {
+                    viewModel.optionQueryMap.remove("orientation")
+                } else
+                    viewModel.optionQueryMap["orientation"] = it
             }
             currentOptions.clear()
-
-            fetchSearchResult(viewModel.optionQueryMap, apiResponse)
+            Log.d("query map", viewModel.optionQueryMap.toString())
+            fetchSearchResult()
             drawerLayout.closeDrawer(GravityCompat.END)
 
         }
@@ -249,27 +226,20 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
         drawerLayout.setDrawerListener(this)
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        (recyclerView.adapter as ImageAdapter).resultList.let {
-            viewModel.resultList.clear()
-            viewModel.resultList.addAll(it)
-        }
-    }
-
-    private fun fetchSearchResult(parameters: Map<String, String>, apiResponse: ApiResponse) {
-        val call = apiResponse.getImageResultsList(parameters)
+    private fun fetchSearchResult() {
+        val call = apiResponse.getImageResultsList(viewModel.optionQueryMap)
         call.enqueue(object : Callback<SearchResult> {
             override fun onFailure(call: Call<SearchResult>, t: Throwable) {
-//                Toast.makeText(applicationContext, "Error", Toast.LENGTH_SHORT).show()
                 networkErrorDialog()
             }
 
             override fun onResponse(call: Call<SearchResult>, response: Response<SearchResult>) {
                 if (response.isSuccessful) {
                     when {
-                        parameters["page"] == "1" -> displayFirstPageOfSearchResult(response.body())
-                        parameters["page"]!!.toInt() != response.body()!!.totalPages -> displayNextSetOfSearchResults(
+                        viewModel.optionQueryMap["page"] == "1" -> displayFirstPageOfSearchResult(
+                            response.body()
+                        )
+                        viewModel.optionQueryMap["page"]!!.toInt() != response.body()!!.totalPages -> displayNextSetOfSearchResults(
                             response.body()
                         )
                         else -> {
@@ -278,15 +248,20 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
                                 "End of search Results",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            end = true
+                            resultFragment?.end = true
                         }
                     }
                 } else {
-                    Toast.makeText(
-                        this@SearchActivity,
-                        "${response.code()} ${response.errorBody()}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    try {
+                        val jObjError = JSONObject(response.errorBody()!!.string());
+                        Toast.makeText(
+                            this@SearchActivity,
+                            "Error: ${jObjError.getJSONObject("error").getString("message")}",
+                            Toast.LENGTH_LONG
+                        ).show();
+                    } catch (e: Exception) {
+                        Toast.makeText(this@SearchActivity, e.message, Toast.LENGTH_LONG).show();
+                    }
                 }
             }
         })
@@ -295,17 +270,25 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     private fun displayFirstPageOfSearchResult(result: SearchResult?) {
         result?.let {
             if (it.results.isNotEmpty()) {
-                adapter.setImageList(it.results)
+                removeNoResultFragment()
+                removeLoadingFragment()
+                displayResultFragment()
+                resultFragment?.setFirstPage(it.results)
                 filter.show()
-            } else
-                Toast.makeText(this, "No matches found", Toast.LENGTH_SHORT).show()
+            } else {
+                removeDisplayResultFragment()
+                displayNoResultFragment()
+                resultFragment?.recyclerView?.recycledViewPool?.clear()
+                resultFragment?.adapter?.notifyDataSetChanged();
+            }
+            textInfo.text = "Search results for ${viewModel.mQuery}"
         }
     }
 
     private fun displayNextSetOfSearchResults(result: SearchResult?) {
         result?.let {
-            adapter.appendImageList(it.results)
-            loading = true
+            resultFragment?.adapter?.appendImageList(it.results)
+            resultFragment?.loading = true
         }
     }
 
@@ -349,58 +332,58 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
                     if (checked) {
                         currentOptions["color"] = COLOR[0]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 }
                 R.id.black ->
                     if (checked) {
                         currentOptions["color"] = COLOR[1]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 R.id.white ->
                     if (checked) {
                         currentOptions["color"] = COLOR[2]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 R.id.yellow ->
                     if (checked) {
                         currentOptions["color"] = COLOR[3]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 R.id.orange ->
                     if (checked) {
                         currentOptions["color"] = COLOR[4]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 R.id.red ->
                     if (checked) {
                         currentOptions["color"] = COLOR[5]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 R.id.purple ->
                     if (checked) {
                         currentOptions["color"] = COLOR[6]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 R.id.magenta ->
                     if (checked) {
                         currentOptions["color"] = COLOR[7]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 R.id.green ->
                     if (checked) {
                         currentOptions["color"] = COLOR[8]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 R.id.teal ->
                     if (checked) {
                         currentOptions["color"] = COLOR[9]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
                 R.id.blue ->
                     if (checked) {
                         currentOptions["color"] = COLOR[10]
                     } else
-                        currentOptions.remove("color")
+                        currentOptions["color"] = "deselect"
             }
         }
     }
@@ -413,17 +396,17 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
                     if (checked) {
                         currentOptions["orientation"] = ORIENTATION[0]
                     } else
-                        currentOptions.remove("orientation")
+                        currentOptions["orientation"] = "deselect"
                 R.id.portrait ->
                     if (checked) {
                         currentOptions["orientation"] = ORIENTATION[1]
                     } else
-                        currentOptions.remove("orientation")
+                        currentOptions["orientation"] = "deselect"
                 R.id.squarish ->
                     if (checked) {
                         currentOptions["orientation"] = ORIENTATION[2]
                     } else
-                        currentOptions.remove("orientation")
+                        currentOptions["orientation"] = "deselect"
             }
         }
     }
@@ -495,10 +478,11 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
 
     }
 
-    override fun onImageClicked(imageBundle: Bundle) {
+    override fun onImageClicked(imageBundle: Bundle, view: View) {
         val intent = Intent(this, ImageDisplayActivity::class.java)
         intent.putExtra("image", imageBundle)
-        startActivity(intent)
+        val options = ActivityOptionsCompat.makeSceneTransitionAnimation(this, view, "image");
+        startActivity(intent, options.toBundle())
     }
 
     private fun networkErrorDialog() {
@@ -507,13 +491,12 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
             .setMessage("Internet is essential for the working of the application.Connect to the internet.")
             .setPositiveButton("Refresh") { _: DialogInterface, i: Int ->
                 if (checkConnectivity()) {
-                    loading = true
+                    resultFragment?.loading = true
                     return@setPositiveButton
                 } else
                     networkErrorDialog()
             }
             .setNegativeButton("Exit") { dialog, which ->
-                //                dialog.dismiss()
                 finishAffinity()
             }.setCancelable(false)
             .create()
@@ -558,5 +541,65 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     override fun onBackPressed() {
         super.onBackPressed()
         finishAffinity()
+    }
+
+    override fun onLoadMoreItems() {
+        incrementPageNumber()
+        fetchSearchResult()
+    }
+
+    private fun displayResultFragment() {
+        if (resultFragment == null) {
+            resultFragment = SearchResultsFragment.newInstance()
+            resultFragment?.onLoadMoreItemsListener = this
+        }
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.container, resultFragment!!, "Result").commit()
+
+        supportFragmentManager.executePendingTransactions()
+    }
+
+    private fun displayNoResultFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(
+                R.id.container,
+                NoResultFragment(), "No result"
+            ).commit()
+    }
+
+    private fun removeNoResultFragment() {
+        supportFragmentManager.findFragmentByTag("No result")?.let {
+            supportFragmentManager.beginTransaction().remove(it)
+        }
+    }
+
+    private fun removeDisplayResultFragment() {
+        supportFragmentManager.findFragmentByTag("Result")?.let {
+            supportFragmentManager.beginTransaction().remove(it)
+        }
+        resultFragment = null
+    }
+
+    private fun displayLoadingFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(
+                R.id.container,
+                LoadingFragment(), "Loading"
+            ).commit()
+    }
+
+    private fun removeLoadingFragment() {
+        supportFragmentManager.findFragmentByTag("Loading")?.let {
+            supportFragmentManager.beginTransaction().remove(it)
+        }
+    }
+
+    private fun incrementPageNumber() {
+        viewModel.optionQueryMap["page"] =
+            (viewModel.optionQueryMap["page"]!!.toInt() + 1).toString()
+    }
+
+    override fun showFilter() {
+        filter.show()
     }
 }

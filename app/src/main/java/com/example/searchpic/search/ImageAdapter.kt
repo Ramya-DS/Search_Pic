@@ -1,23 +1,22 @@
 package com.example.searchpic.search
 
+import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.appcompat.content.res.AppCompatResources.getDrawable
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.example.searchpic.R
 import com.example.searchpic.search.datamodel.ImageDetails
 import com.example.searchpic.util.OnImageClickedListener
+import java.lang.ref.WeakReference
 
-class ImageAdapter(val onImageClickedListener: OnImageClickedListener) :
+class ImageAdapter(val onImageClickedListener: OnImageClickedListener, private val activity: WeakReference<Activity>) :
     RecyclerView.Adapter<ImageAdapter.ImageViewHolder>() {
 
     var resultList = mutableListOf<ImageDetails>()
@@ -43,7 +42,7 @@ class ImageAdapter(val onImageClickedListener: OnImageClickedListener) :
                     this.putInt("width", it.width)
                     this.putInt("height", it.height)
                 }
-                onImageClickedListener.onImageClicked(bundle)
+                onImageClickedListener.onImageClicked(bundle, imageView)
             }
         }
     }
@@ -61,11 +60,7 @@ class ImageAdapter(val onImageClickedListener: OnImageClickedListener) :
     override fun onBindViewHolder(holder: ImageViewHolder, position: Int) {
         val result = resultList[position]
         holder.image = result
-        Glide.with(holder.imageView.context)
-            .load(result.urls.small)
-            .placeholder(getDrawable(holder.imageView.context!!, R.drawable.placeholder))
-            .transition(DrawableTransitionOptions.withCrossFade())
-            .into(holder.imageView)
+        LoadImage(WeakReference(holder.imageView),activity).execute(result.urls.small)
 
         val ratio = String.format("%d:%d", result.width, result.height)
         set.clone(holder.mConstraintLayout)
@@ -88,14 +83,10 @@ class ImageAdapter(val onImageClickedListener: OnImageClickedListener) :
                     mImage = bundle.getParcelable(key)
             }
             mImage?.let {
-                holder.image = mImage
-                Glide.with(holder.imageView.context)
-                    .load(mImage.urls.small)
-                    .placeholder(getDrawable(holder.imageView.context!!, R.drawable.placeholder))
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .into(holder.imageView)
+                holder.image = it
+                LoadImage(WeakReference(holder.imageView),activity).execute(it.urls.small)
 
-                val ratio = String.format("%d:%d", mImage.width, mImage.height)
+                val ratio = String.format("%d:%d", it.width, it.height)
                 set.clone(holder.mConstraintLayout)
                 set.setDimensionRatio(holder.imageView.id, ratio)
                 set.applyTo(holder.mConstraintLayout)
