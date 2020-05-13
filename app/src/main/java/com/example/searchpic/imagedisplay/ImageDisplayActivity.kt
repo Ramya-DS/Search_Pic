@@ -50,18 +50,22 @@ class ImageDisplayActivity : AppCompatActivity() {
             if (id == downloadId) {
                 val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                 val uri = manager.getUriForDownloadedFile(downloadId)
-                Log.d("uri", uri.toString())
-
-                Snackbar
-                    .make(coordinatorLayout, "Download complete!", Snackbar.LENGTH_LONG)
-                    .setAction("View") {
-                        val i = Intent()
-                        i.action = Intent.ACTION_VIEW
-                        i.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        i.setDataAndType(uri, "image/*")
-                        startActivity(i)
-                    }
-                    .show()
+                
+                if (uri != null)
+                    Snackbar
+                        .make(coordinatorLayout, "Download complete!", Snackbar.LENGTH_LONG)
+                        .setAction("View") {
+                            val i = Intent()
+                            i.action = Intent.ACTION_VIEW
+                            i.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            i.setDataAndType(uri, "image/*")
+                            startActivity(i)
+                        }
+                        .show()
+                else
+                    Snackbar
+                        .make(coordinatorLayout, "Download failed!", Snackbar.LENGTH_LONG)
+                        .show()
             }
         }
     }
