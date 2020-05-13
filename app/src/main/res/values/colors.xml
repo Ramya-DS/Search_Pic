@@ -7,4 +7,6 @@
     <color name="colorSecondaryDark">#2286c3</color>
     <color name="colorSecondaryLight">#9be7ff</color>
 
+    <color name="grey">#E0E0E0</color>
+
 </resources>

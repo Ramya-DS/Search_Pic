@@ -5,10 +5,12 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import android.os.AsyncTask
+import android.util.Log
 import android.widget.ImageView
 import androidx.core.app.ActivityCompat.startPostponedEnterTransition
 import androidx.core.content.ContextCompat
 import com.example.searchpic.R
+import com.example.searchpic.SearchPicApplication
 import java.lang.ref.WeakReference
 import java.net.URL
 
@@ -19,13 +21,27 @@ class LoadImage(
     AsyncTask<String, Unit, Bitmap>() {
     override fun doInBackground(vararg params: String?): Bitmap {
         val inputStream = URL(params[0]).openStream()
-        return BitmapFactory.decodeStream(inputStream)
+        val bitmap = BitmapFactory.decodeStream(inputStream)
+        SearchPicApplication.accessCache().put(params[0]!!, bitmap)
+        Log.d("LRU", "${SearchPicApplication.accessCache()}\n")
+        if (params[1] == "image") {
+            val app = (activity.get()!!.application as SearchPicApplication)
+            synchronized(app.diskCacheLock) {
+                app.diskLruCache?.apply {
+                    if (!app.containsKey(params[2])) {
+                        app.put(params[2]!!, bitmap)
+                    }
+                }
+            }
+        }
+        return bitmap
     }
 
     override fun onPostExecute(result: Bitmap?) {
-        val drawable =
-            ContextCompat.getDrawable(imageView.get()!!.context, R.drawable.placeholder)
-        imageView.get()!!.setImageBitmap(result ?: (drawable as BitmapDrawable).bitmap)
-        startPostponedEnterTransition(activity.get()!!)
+        result?.let {
+            imageView.get()!!.setImageBitmap(it)
+            startPostponedEnterTransition(activity.get()!!)
+        }
+
     }
 }

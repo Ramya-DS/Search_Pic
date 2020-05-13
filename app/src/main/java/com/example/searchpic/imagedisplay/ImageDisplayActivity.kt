@@ -3,6 +3,7 @@ package com.example.searchpic.imagedisplay
 import android.app.DownloadManager
 import android.content.*
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -17,11 +18,16 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.example.searchpic.R
+import com.example.searchpic.SearchPicApplication
 import com.example.searchpic.search.LoadImage
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
+import okhttp3.internal.cache.DiskLruCache
+import java.io.IOException
 import java.lang.ref.WeakReference
+import java.util.*
+import kotlin.concurrent.withLock
 
 
 class ImageDisplayActivity : AppCompatActivity() {
@@ -50,7 +56,7 @@ class ImageDisplayActivity : AppCompatActivity() {
             if (id == downloadId) {
                 val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                 val uri = manager.getUriForDownloadedFile(downloadId)
-                
+
                 if (uri != null)
                     Snackbar
                         .make(coordinatorLayout, "Download complete!", Snackbar.LENGTH_LONG)
@@ -168,7 +174,15 @@ class ImageDisplayActivity : AppCompatActivity() {
 
     private fun setImage() {
         val imageDisplay: ImageView = findViewById(R.id.image_display)
-        LoadImage(WeakReference(imageDisplay), WeakReference(this)).execute(raw)
+        val bitmap = getBitmapFromDiskCache(id.toLowerCase(Locale.ENGLISH))
+        if (bitmap != null)
+            imageDisplay.setImageBitmap(bitmap)
+        else
+            LoadImage(WeakReference(imageDisplay), WeakReference(this)).execute(
+                raw,
+                "image",
+                id.toLowerCase(Locale.ENGLISH)
+            )
 
         val constraintLayout = findViewById<ConstraintLayout>(R.id.displayConstraint)
         val ratio = String.format("%d:%d", width, height)
@@ -207,5 +221,10 @@ class ImageDisplayActivity : AppCompatActivity() {
         super.onDestroy()
         unregisterReceiver(onComplete)
         unregisterReceiver(onNotificationClick)
+    }
+
+    private fun getBitmapFromDiskCache(key: String): Bitmap? {
+        val app = (application as SearchPicApplication)
+        return app.getBitmap(key)
     }
 }
