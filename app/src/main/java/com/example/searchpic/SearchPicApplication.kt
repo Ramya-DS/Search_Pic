@@ -153,6 +153,7 @@ class SearchPicApplication : Application() {
             val `in` = snapshot.getInputStream(0)
             if (`in` != null) {
                 val buffIn = BufferedInputStream(`in`, 8 * 1024)
+                //TODO Bitmap is directly loaded from file stream instead of downsizing to view dimensions
                 bitmap = BitmapFactory.decodeStream(buffIn)
             }
         } catch (e: IOException) {
