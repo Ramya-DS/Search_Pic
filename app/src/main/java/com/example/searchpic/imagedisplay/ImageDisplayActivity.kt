@@ -23,11 +23,8 @@ import com.example.searchpic.search.LoadImage
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
-import okhttp3.internal.cache.DiskLruCache
-import java.io.IOException
 import java.lang.ref.WeakReference
 import java.util.*
-import kotlin.concurrent.withLock
 
 
 class ImageDisplayActivity : AppCompatActivity() {
@@ -109,6 +106,7 @@ class ImageDisplayActivity : AppCompatActivity() {
         val download: MaterialButton = findViewById(R.id.download)
 
         download.setOnClickListener {
+            //TODO Is this version check required ?
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(
                         android.Manifest.permission.READ_EXTERNAL_STORAGE
@@ -152,7 +150,8 @@ class ImageDisplayActivity : AppCompatActivity() {
             val i = Intent()
             i.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
             i.addCategory(Intent.CATEGORY_DEFAULT)
-            i.data = Uri.parse("package:" + getPackageName())
+            i.data = Uri.parse("package:$packageName")
+            //TODO How to add these flags in a single addFlags method call ?
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
             i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)

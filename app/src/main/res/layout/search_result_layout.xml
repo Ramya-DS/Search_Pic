@@ -13,7 +13,7 @@
         android:id="@+id/parentConstraint"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
+        <!--TODO Why constraintlayout with a single child ?-->
         <ImageView
             android:id="@+id/imgSource"
             android:layout_width="0dp"

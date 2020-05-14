@@ -46,7 +46,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImageClickedListener,
     OnLoadMoreItemsListener {
-
+    //TODO unsed variable ?
     private lateinit var memoryCache: LruCache<String, Bitmap>
     private lateinit var viewModel: SearchActivityViewModel
     private lateinit var searchView: SearchView
@@ -173,6 +173,7 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     }
 
     private fun parametersInitialised(query: String) {
+        //TODO use scoped block for simplified syntax
         viewModel.optionQueryMap["query"] = query
         viewModel.optionQueryMap["page"] = "1"
         viewModel.optionQueryMap["per_page"] = "50"
@@ -330,6 +331,7 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     fun onColorOptionsClicked(view: View) {
         if (view is Chip) {
             val checked = view.isChecked
+            //TODO Is 'checked' boolean needs to be checked for every option separately ?
             when (view.id) {
                 R.id.black_and_white -> {
                     if (checked) {
@@ -394,6 +396,7 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     fun onOrientationOptionsClicked(view: View) {
         if (view is Chip) {
             val checked = view.isChecked
+            //TODO Is 'checked' boolean needs to be checked for every option separately ?
             when (view.id) {
                 R.id.landscape ->
                     if (checked) {
@@ -518,7 +521,9 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
             isConnected = activeNetwork?.isConnectedOrConnecting == true
         } else {
             try {
+                //TODO unused variable ?
                 val builder = NetworkRequest.Builder()
+                //TODO this callback will be returned asynchronously. How does it work with a synchronous checkConnectivity method call ?
                 cm.registerDefaultNetworkCallback(object :
                     ConnectivityManager.NetworkCallback() {
                     override fun onLost(network: Network) {

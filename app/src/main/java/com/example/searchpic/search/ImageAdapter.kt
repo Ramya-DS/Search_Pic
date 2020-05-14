@@ -47,6 +47,7 @@ class ImageAdapter(
             image?.let {
                 Log.d("image", image.toString())
                 val bundle = Bundle().apply {
+                    //TODO Is 'this' call necessary ?
                     this.putString("id", it.id)
                     this.putString("raw", it.urls.regular)
                     this.putString("description", it.description)
@@ -78,6 +79,7 @@ class ImageAdapter(
         )
         val bitmap = SearchPicApplication.accessCache()[result.urls.small]
         if (bitmap == null) {
+            //TODO double null check ?
             if (holder.imageTask != null) {
                 holder.imageTask!!.cancel(true)
             }
@@ -103,6 +105,7 @@ class ImageAdapter(
 
             val bundle = payloads[0] as Bundle
             var mImage: ImageDetails? = null
+            //TODO explain this loop
             for (key in bundle.keySet()) {
                 if (key == "newNote")
                     mImage = bundle.getParcelable(key)
@@ -115,6 +118,7 @@ class ImageAdapter(
                     )
                 )
                 holder.image = it
+                //TODO code repetition
                 val bitmap = SearchPicApplication.accessCache()[it.urls.small]
                 if (bitmap == null) {
                     if (holder.imageTask != null) {
