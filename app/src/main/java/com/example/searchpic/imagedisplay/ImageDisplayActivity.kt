@@ -190,6 +190,7 @@ class ImageDisplayActivity : AppCompatActivity() {
         val image = SearchPicApplication.accessCache()[bitmap]
         image?.let {
             val height = (resources.displayMetrics.widthPixels * height) / width
+            //TODO Bitmap creation, scaling operations are resource consuming and hence needs to be executed in bg thread
             imageDisplay.setImageBitmap(
                 Bitmap.createScaledBitmap(
                     it,
@@ -199,6 +200,7 @@ class ImageDisplayActivity : AppCompatActivity() {
                 )
             )
         }
+        //TODO Bitmap creation, scaling operations are resource consuming and hence needs to be executed in bg thread
         val mBitmap = getBitmapFromDiskCache(id.toLowerCase(Locale.ENGLISH))
         if (mBitmap != null)
             imageDisplay.setImageBitmap(mBitmap)

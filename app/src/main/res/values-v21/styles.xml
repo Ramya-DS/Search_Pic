@@ -16,7 +16,7 @@
     <style name="button" parent="Widget.MaterialComponents.Button">
         <item name="android:background">@drawable/button_background</item>
     </style>
-
+<!--TODO If it doesn't override anything in the base styles.xml, why is it declared again in this v21 variant ?-->
     <style name="chip" parent="Widget.MaterialComponents.Chip.Choice">
         <item name="android:checkable">true</item>
         <item name="android:clickable">true</item>
