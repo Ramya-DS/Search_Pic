@@ -25,6 +25,7 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:scrollbars="vertical"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -41,8 +42,9 @@
                     android:id="@+id/image_display"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
+                    android:adjustViewBounds="true"
                     android:contentDescription="@string/image"
-                    android:scaleType="centerCrop"
+                    android:scaleType="fitXY"
                     android:transitionName="image"
                     app:layout_constraintDimensionRatio="1:1"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -65,7 +67,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="download"
+                android:text="@string/download"
                 app:cornerRadius="20dp" />
 
         </LinearLayout>

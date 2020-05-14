@@ -16,4 +16,16 @@
     <style name="button" parent="Widget.MaterialComponents.Button">
         <item name="android:background">@drawable/button_background</item>
     </style>
+
+    <style name="chip" parent="Widget.MaterialComponents.Chip.Choice">
+        <item name="android:checkable">true</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="chipStrokeColor">@color/colorAccent</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="chipBackgroundColor">@color/bg_chip_state_list</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
 </resources>

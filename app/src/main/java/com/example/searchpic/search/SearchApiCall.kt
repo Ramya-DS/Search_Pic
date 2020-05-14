@@ -6,7 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import retrofit2.http.QueryMap
 
-interface ApiResponse {
+interface SearchApiCall {
     @GET("photos")
     fun getImageResultsList(@QueryMap parameters: Map<String, String>): Call<SearchResult>
 }

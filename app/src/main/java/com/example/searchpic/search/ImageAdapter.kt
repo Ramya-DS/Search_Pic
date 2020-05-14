@@ -2,7 +2,6 @@ package com.example.searchpic.search
 
 import android.app.Activity
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.os.Build
 import android.os.Bundle
@@ -22,7 +21,6 @@ import com.example.searchpic.SearchPicApplication
 import com.example.searchpic.search.datamodel.ImageDetails
 import com.example.searchpic.util.OnImageClickedListener
 import java.lang.ref.WeakReference
-
 
 class ImageAdapter(
     val onImageClickedListener: OnImageClickedListener,
@@ -47,12 +45,13 @@ class ImageAdapter(
             image?.let {
                 Log.d("image", image.toString())
                 val bundle = Bundle().apply {
-                    this.putString("id", it.id)
-                    this.putString("raw", it.urls.regular)
-                    this.putString("description", it.description)
-                    this.putString("download", it.links.download)
-                    this.putInt("width", it.width)
-                    this.putInt("height", it.height)
+                    putString("id", it.id)
+                    putString("raw", it.urls.regular)
+                    putString("description", it.description)
+                    putString("download", it.links.download)
+                    putInt("width", it.width)
+                    putInt("height", it.height)
+                    putString("bitmap", it.urls.small)
                 }
                 onImageClickedListener.onImageClicked(bundle, imageView)
             }
@@ -73,23 +72,13 @@ class ImageAdapter(
         val result = resultList[position]
         holder.image = result
         holder.imageView.setImageBitmap(
-            getBitmapFromVectorDrawable(R.drawable.placeholder,
-                50,50)
+            getBitmapFromVectorDrawable(
+                R.drawable.placeholder,
+                50, 50
+            )
         )
-        val bitmap = SearchPicApplication.accessCache()[result.urls.small]
-        if (bitmap == null) {
-            if (holder.imageTask != null) {
-                holder.imageTask!!.cancel(true)
-            }
-            holder.imageTask = LoadImage(WeakReference(holder.imageView), activity)
-            holder.imageTask!!.execute(result.urls.small, "thumb")
-        } else
-            holder.imageView.setImageBitmap(bitmap)
 
-        val ratio = String.format("%d:%d", result.width, result.height)
-        set.clone(holder.mConstraintLayout)
-        set.setDimensionRatio(holder.imageView.id, ratio)
-        set.applyTo(holder.mConstraintLayout)
+        setBitmapInHolder(holder, result)
     }
 
     override fun onBindViewHolder(
@@ -102,33 +91,17 @@ class ImageAdapter(
         } else {
 
             val bundle = payloads[0] as Bundle
-            var mImage: ImageDetails? = null
-            for (key in bundle.keySet()) {
-                if (key == "newNote")
-                    mImage = bundle.getParcelable(key)
-            }
+            val mImage: ImageDetails?
+            mImage = bundle.getParcelable("newImage")
             mImage?.let {
                 holder.imageView.setImageBitmap(
                     getBitmapFromVectorDrawable(
                         R.drawable.placeholder,
-                        50,50
+                        50, 50
                     )
                 )
                 holder.image = it
-                val bitmap = SearchPicApplication.accessCache()[it.urls.small]
-                if (bitmap == null) {
-                    if (holder.imageTask != null) {
-                        holder.imageTask!!.cancel(true)
-                    }
-                    holder.imageTask = LoadImage(WeakReference(holder.imageView), activity)
-                    holder.imageTask!!.execute(it.urls.small, "thumb")
-                } else
-                    holder.imageView.setImageBitmap(bitmap)
-
-                val ratio = String.format("%d:%d", it.width, it.height)
-                set.clone(holder.mConstraintLayout)
-                set.setDimensionRatio(holder.imageView.id, ratio)
-                set.applyTo(holder.mConstraintLayout)
+                setBitmapInHolder(holder, it)
             }
         }
     }
@@ -182,7 +155,7 @@ class ImageAdapter(
             val diffBundle = Bundle()
 
             if (oldNote.id != newNote.id) {
-                diffBundle.putParcelable("newNote", newNote)
+                diffBundle.putParcelable("newImage", newNote)
             }
 
             return if (diffBundle.size() == 0) null else diffBundle
@@ -211,5 +184,22 @@ class ImageAdapter(
         drawable!!.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return bitmap
+    }
+
+    private fun setBitmapInHolder(holder: ImageViewHolder, image: ImageDetails) {
+        val bitmap = SearchPicApplication.accessCache()[image.urls.small]
+        if (bitmap == null) {
+            holder.imageTask?.cancel(true)
+            holder.imageTask = LoadImage(WeakReference(holder.imageView), activity)
+            Log.d("main", " ")
+            holder.imageTask!!.execute(image.urls.small, "thumb")
+        } else
+            holder.imageView.setImageBitmap(bitmap)
+
+        val ratio = String.format("%d:%d", image.width, image.height)
+        Log.d("view", "${image.width} ${image.height}")
+        set.clone(holder.mConstraintLayout)
+        set.setDimensionRatio(holder.imageView.id, ratio)
+        set.applyTo(holder.mConstraintLayout)
     }
 }

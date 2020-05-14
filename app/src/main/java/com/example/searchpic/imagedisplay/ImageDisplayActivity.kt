@@ -23,12 +23,8 @@ import com.example.searchpic.search.LoadImage
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
-import okhttp3.internal.cache.DiskLruCache
-import java.io.IOException
 import java.lang.ref.WeakReference
 import java.util.*
-import kotlin.concurrent.withLock
-
 
 class ImageDisplayActivity : AppCompatActivity() {
 
@@ -41,6 +37,7 @@ class ImageDisplayActivity : AppCompatActivity() {
     lateinit var downloadLink: String
     private val set = ConstraintSet()
     lateinit var coordinatorLayout: CoordinatorLayout
+    private lateinit var bitmap: String
 
     companion object {
         val permissions = arrayOf(
@@ -132,33 +129,47 @@ class ImageDisplayActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_PERMISSION && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
             downloadImage()
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (shouldShowRequestPermissionRationale(android.Manifest.permission.READ_EXTERNAL_STORAGE) || shouldShowRequestPermissionRationale(
-                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                )
-            ) {
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Permission is needed")
-                    .setMessage("This permission is essential for the downloading and storing the image")
-                    .setPositiveButton("Ok") { _: DialogInterface, i: Int ->
-                        requestPermissions(Companion.permissions, REQUEST_PERMISSION)
-                    }
-                    .setNegativeButton("Cancel") { dialog, which ->
-                        dialog.dismiss()
-                    }
-                    .create().show()
-            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && (shouldShowRequestPermissionRationale(
+                android.Manifest.permission.READ_EXTERNAL_STORAGE
+            ) || shouldShowRequestPermissionRationale(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+        ) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Permission is needed")
+                .setMessage("This permission is essential for the downloading and storing the image")
+                .setPositiveButton("Ok") { _: DialogInterface, i: Int ->
+                    requestPermissions(Companion.permissions, REQUEST_PERMISSION)
+                }
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                    Toast.makeText(
+                        this,
+                        "Storage permission is necessary for downloading image",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                .create().show()
         } else {
-            val i = Intent()
-            i.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-            i.addCategory(Intent.CATEGORY_DEFAULT)
-            i.data = Uri.parse("package:" + getPackageName())
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
-            i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-            startActivity(i)
+            val snackBar = Snackbar
+                .make(
+                    coordinatorLayout,
+                    "You have denied permission to access storage. Approve this permission in the app settings of your device ",
+                    Snackbar.LENGTH_LONG
+                )
+                .setAction("Settings") {
+                    val i = Intent()
+                    i.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    i.addCategory(Intent.CATEGORY_DEFAULT)
+                    i.data = Uri.parse("package:$packageName")
+                    i.flags =
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_HISTORY or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                    startActivity(i)
+                }
+            snackBar.view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)
+                .setLines(4)
+            snackBar.show()
         }
     }
+
 
     private fun getIntentData() {
         val bundle = intent.getBundleExtra("image")
@@ -169,21 +180,35 @@ class ImageDisplayActivity : AppCompatActivity() {
             downloadLink = it.getString("download", "download")
             width = it.getInt("width")
             height = it.getInt("height")
+            bitmap = it.getString("bitmap", "")
         }
     }
 
     private fun setImage() {
         val imageDisplay: ImageView = findViewById(R.id.image_display)
-        val bitmap = getBitmapFromDiskCache(id.toLowerCase(Locale.ENGLISH))
-        if (bitmap != null)
-            imageDisplay.setImageBitmap(bitmap)
-        else
+
+        val image = SearchPicApplication.accessCache()[bitmap]
+        image?.let {
+            val height = (resources.displayMetrics.widthPixels * height) / width
+            imageDisplay.setImageBitmap(
+                Bitmap.createScaledBitmap(
+                    it,
+                    resources.displayMetrics.widthPixels,
+                    height,
+                    false
+                )
+            )
+        }
+        val mBitmap = getBitmapFromDiskCache(id.toLowerCase(Locale.ENGLISH))
+        if (mBitmap != null)
+            imageDisplay.setImageBitmap(mBitmap)
+        else {
             LoadImage(WeakReference(imageDisplay), WeakReference(this)).execute(
                 raw,
                 "image",
                 id.toLowerCase(Locale.ENGLISH)
             )
-
+        }
         val constraintLayout = findViewById<ConstraintLayout>(R.id.displayConstraint)
         val ratio = String.format("%d:%d", width, height)
         set.clone(constraintLayout)

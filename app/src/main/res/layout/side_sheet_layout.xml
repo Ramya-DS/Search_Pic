@@ -14,14 +14,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/order_by"
-            android:textStyle="bold"
             android:textColor="@color/colorPrimary"
-            android:textSize="14sp"/>
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <RadioGroup
+            android:id="@+id/order_by_group"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/order_by_group"
             android:orientation="horizontal">
 
             <RadioButton
@@ -47,14 +47,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/content_filter"
-            android:textStyle="bold"
             android:textColor="@color/colorPrimary"
-            android:textSize="14sp"/>
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <RadioGroup
+            android:id="@+id/content_group"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/content_group"
             android:orientation="horizontal">
 
             <RadioButton
@@ -79,172 +79,84 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="@string/color"
             android:textColor="@color/colorPrimary"
             android:textSize="14sp"
-            android:textStyle="bold"
-            android:text="@string/color" />
+            android:textStyle="bold" />
 
         <com.google.android.material.chip.ChipGroup
+            android:id="@+id/color_group"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:chipSpacing="6dp"
-            android:id="@+id/color_group"
             app:singleLine="false"
             app:singleSelection="true">
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/black_and_white"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Black and White"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Black and White" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/black"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Black"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Black" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/white"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="White"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconEnabled="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="White" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/yellow"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Yellow"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Yellow" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/orange"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Orange"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Orange" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/red"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Red"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Red" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/purple"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Purple"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Purple" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/magenta"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Magenta"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Magenta" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/green"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Green"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Green" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/teal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Teal"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Teal" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/blue"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onColorOptionsClicked"
-                android:text="Blue"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Blue" />
 
         </com.google.android.material.chip.ChipGroup>
 
@@ -252,70 +164,46 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="@string/orientation"
             android:textColor="@color/colorPrimary"
-            android:textSize="14sp"
-            android:text="@string/orientation" />
+            android:textSize="14sp" />
 
         <com.google.android.material.chip.ChipGroup
+            android:id="@+id/orientation_group"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:chipSpacing="6dp"
-            android:id="@+id/orientation_group"
             app:singleLine="false"
             app:singleSelection="true">
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/landscape"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
+                style="@style/chip"
                 android:onClick="onOrientationOptionsClicked"
-                android:text="Landscape"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Landscape" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/portrait"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                android:clickable="true"
-                android:focusable="true"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
+                style="@style/chip"
                 android:onClick="onOrientationOptionsClicked"
-                android:text="Portrait"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Portrait" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/squarish"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checkable="true"
-                app:chipStrokeColor="@color/colorAccent"
-                app:chipStrokeWidth="1dp"
-                android:clickable="true"
-                android:focusable="true"
+                style="@style/chip"
                 android:onClick="onOrientationOptionsClicked"
-                android:text="Squarish"
-                app:checkedIconVisible="false"
-                app:chipBackgroundColor="@color/bg_chip_state_list" />
+                android:text="Squarish" />
 
         </com.google.android.material.chip.ChipGroup>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/filter_button"
             android:layout_width="wrap_content"
-            app:cornerRadius="10dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="10dp"
-            android:text="Filter" />
+            android:text="Filter"
+            app:cornerRadius="10dp" />
 
     </LinearLayout>
 </ScrollView>

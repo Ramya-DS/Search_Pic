@@ -3,12 +3,10 @@ package com.example.searchpic.search
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.ConnectivityManager
-import android.net.Network
+import android.net.ConnectivityManager.TYPE_MOBILE
+import android.net.ConnectivityManager.TYPE_WIFI
 import android.net.NetworkInfo
-import android.net.NetworkRequest
-import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
@@ -20,7 +18,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
-import androidx.collection.LruCache
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -43,18 +40,16 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-
 class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImageClickedListener,
     OnLoadMoreItemsListener {
 
-    private lateinit var memoryCache: LruCache<String, Bitmap>
     private lateinit var viewModel: SearchActivityViewModel
     private lateinit var searchView: SearchView
-    lateinit var apiResponse: ApiResponse
+    private lateinit var searchApiCall: SearchApiCall
     private var currentOptions = HashMap<String, String>()
     private lateinit var filter: FloatingActionButton
     private var mQuery: String = ""
-    lateinit var textInfo: TextView
+    private lateinit var textInfo: TextView
     var resultFragment: SearchResultsFragment? = null
 
     companion object {
@@ -101,7 +96,7 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
-        apiResponse = retrofit.create(ApiResponse::class.java)
+        searchApiCall = retrofit.create(SearchApiCall::class.java)
 
         filter = findViewById(R.id.filter)
         filter.hide()
@@ -173,13 +168,15 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     }
 
     private fun parametersInitialised(query: String) {
-        viewModel.optionQueryMap["query"] = query
-        viewModel.optionQueryMap["page"] = "1"
-        viewModel.optionQueryMap["per_page"] = "50"
-        viewModel.optionQueryMap.remove("color")
-        viewModel.optionQueryMap.remove("content_filter")
-        viewModel.optionQueryMap.remove("order_by")
-        viewModel.optionQueryMap.remove("orientation")
+        viewModel.optionQueryMap.apply {
+            put("query", query)
+            put("page", "1")
+            put("per_page", "50")
+            remove("color")
+            remove("content_filter")
+            remove("order_by")
+            remove("orientation")
+        }
     }
 
     private fun sideSheetInitialisation() {
@@ -230,7 +227,7 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     }
 
     private fun fetchSearchResult() {
-        val call = apiResponse.getImageResultsList(viewModel.optionQueryMap)
+        val call = searchApiCall.getImageResultsList(viewModel.optionQueryMap)
         call.enqueue(object : Callback<SearchResult> {
             override fun onFailure(call: Call<SearchResult>, t: Throwable) {
                 networkErrorDialog()
@@ -298,15 +295,11 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     fun onOrderByOptionsClicked(view: View) {
         if (view is RadioButton) {
             val checked = view.isChecked
-            when (view.getId()) {
-                R.id.relevant ->
-                    if (checked) {
-                        currentOptions["order_by"] = ORDER_BY[0]
-                    }
-                R.id.latest ->
-                    if (checked) {
-                        currentOptions["order_by"] = ORDER_BY[1]
-                    }
+            if (checked) {
+                when (view.getId()) {
+                    R.id.relevant -> currentOptions["order_by"] = ORDER_BY[0]
+                    R.id.latest -> currentOptions["order_by"] = ORDER_BY[1]
+                }
             }
         }
     }
@@ -314,15 +307,11 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     fun onContentFilterOptionClicked(view: View) {
         if (view is RadioButton) {
             val checked = view.isChecked
-            when (view.getId()) {
-                R.id.high ->
-                    if (checked) {
-                        currentOptions["content_filter"] = CONTENT_FILTER[1]
-                    }
-                R.id.low ->
-                    if (checked) {
-                        currentOptions["content_filter"] = CONTENT_FILTER[0]
-                    }
+            if (checked) {
+                when (view.getId()) {
+                    R.id.high -> currentOptions["content_filter"] = CONTENT_FILTER[1]
+                    R.id.low -> currentOptions["content_filter"] = CONTENT_FILTER[0]
+                }
             }
         }
     }
@@ -330,87 +319,36 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     fun onColorOptionsClicked(view: View) {
         if (view is Chip) {
             val checked = view.isChecked
-            when (view.id) {
-                R.id.black_and_white -> {
-                    if (checked) {
-                        currentOptions["color"] = COLOR[0]
-                    } else
-                        currentOptions["color"] = "deselect"
+            if (checked) {
+                when (view.id) {
+                    R.id.black_and_white -> currentOptions["color"] = COLOR[0]
+                    R.id.black -> currentOptions["color"] = COLOR[1]
+                    R.id.white -> currentOptions["color"] = COLOR[2]
+                    R.id.yellow -> currentOptions["color"] = COLOR[3]
+                    R.id.orange -> currentOptions["color"] = COLOR[4]
+                    R.id.red -> currentOptions["color"] = COLOR[5]
+                    R.id.purple -> currentOptions["color"] = COLOR[6]
+                    R.id.magenta -> currentOptions["color"] = COLOR[7]
+                    R.id.green -> currentOptions["color"] = COLOR[8]
+                    R.id.teal -> currentOptions["color"] = COLOR[9]
+                    R.id.blue -> currentOptions["color"] = COLOR[10]
                 }
-                R.id.black ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[1]
-                    } else
-                        currentOptions["color"] = "deselect"
-                R.id.white ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[2]
-                    } else
-                        currentOptions["color"] = "deselect"
-                R.id.yellow ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[3]
-                    } else
-                        currentOptions["color"] = "deselect"
-                R.id.orange ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[4]
-                    } else
-                        currentOptions["color"] = "deselect"
-                R.id.red ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[5]
-                    } else
-                        currentOptions["color"] = "deselect"
-                R.id.purple ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[6]
-                    } else
-                        currentOptions["color"] = "deselect"
-                R.id.magenta ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[7]
-                    } else
-                        currentOptions["color"] = "deselect"
-                R.id.green ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[8]
-                    } else
-                        currentOptions["color"] = "deselect"
-                R.id.teal ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[9]
-                    } else
-                        currentOptions["color"] = "deselect"
-                R.id.blue ->
-                    if (checked) {
-                        currentOptions["color"] = COLOR[10]
-                    } else
-                        currentOptions["color"] = "deselect"
-            }
+            } else currentOptions["color"] = "deselect"
         }
     }
 
     fun onOrientationOptionsClicked(view: View) {
         if (view is Chip) {
             val checked = view.isChecked
-            when (view.id) {
-                R.id.landscape ->
-                    if (checked) {
-                        currentOptions["orientation"] = ORIENTATION[0]
-                    } else
-                        currentOptions["orientation"] = "deselect"
-                R.id.portrait ->
-                    if (checked) {
-                        currentOptions["orientation"] = ORIENTATION[1]
-                    } else
-                        currentOptions["orientation"] = "deselect"
-                R.id.squarish ->
-                    if (checked) {
-                        currentOptions["orientation"] = ORIENTATION[2]
-                    } else
-                        currentOptions["orientation"] = "deselect"
-            }
+            if (checked) {
+                when (view.id) {
+                    R.id.landscape -> currentOptions["orientation"] = ORIENTATION[0]
+                    R.id.portrait -> currentOptions["orientation"] = ORIENTATION[1]
+                    R.id.squarish -> currentOptions["orientation"] = ORIENTATION[2]
+
+                }
+            } else
+                currentOptions["orientation"] = "deselect"
         }
     }
 
@@ -499,7 +437,7 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
                 } else
                     networkErrorDialog()
             }
-            .setNegativeButton("Exit") { dialog, which ->
+            .setNegativeButton("Exit") { _, _ ->
                 finishAffinity()
             }.setCancelable(false)
             .create()
@@ -511,34 +449,14 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     }
 
     private fun checkConnectivity(): Boolean {
-        var isConnected: Boolean
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
-            val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
-            isConnected = activeNetwork?.isConnectedOrConnecting == true
-        } else {
-            try {
-                val builder = NetworkRequest.Builder()
-                cm.registerDefaultNetworkCallback(object :
-                    ConnectivityManager.NetworkCallback() {
-                    override fun onLost(network: Network) {
-                        super.onLost(network)
-                        isConnected = false
-                    }
 
-                    override fun onAvailable(network: Network) {
-                        super.onAvailable(network)
-                        isConnected = true
-                    }
-                })
-
-                isConnected = false
-            } catch (e: Exception) {
-                isConnected = false
-            }
+        if (cm.getNetworkInfo(TYPE_MOBILE)?.state == NetworkInfo.State.CONNECTED
+            || cm.getNetworkInfo(TYPE_WIFI)?.state == NetworkInfo.State.CONNECTED
+        ) {
+            return true
         }
-
-        return isConnected
+        return false
     }
 
     override fun onBackPressed() {
