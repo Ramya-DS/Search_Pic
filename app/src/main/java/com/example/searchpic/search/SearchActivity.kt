@@ -427,7 +427,6 @@ class SearchActivity : AppCompatActivity(), DrawerLayout.DrawerListener, OnImage
     }
 
     private fun networkErrorDialog() {
-
         val alertDialog = AlertDialog.Builder(this).setTitle("No internet connection")
             .setMessage("Internet is essential for the working of the application.Connect to the internet.")
             .setPositiveButton("Refresh") { _: DialogInterface, i: Int ->

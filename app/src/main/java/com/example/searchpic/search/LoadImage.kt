@@ -4,12 +4,11 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.AsyncTask
-import android.util.Log
 import android.widget.ImageView
 import com.example.searchpic.SearchPicApplication
 import java.io.BufferedInputStream
-import java.io.IOException
 import java.io.InputStream
+import java.lang.Exception
 import java.lang.ref.WeakReference
 import java.net.URL
 import kotlin.concurrent.withLock
@@ -25,13 +24,16 @@ class LoadImage(
         val width = params[1]!!
         val height = params[2]!!
         val storage = params[3]!!
+        val inputStream: InputStream?
 
-        val inputStream = URL(url).openStream()
+        inputStream = try {
+            URL(url).openStream()
+        } catch (e: Exception) {
+            null
+        }
 
         val bitmap =
             inputStream?.let { createScaledBitmapFromStream(it, width.toInt(), height.toInt()) }
-
-        Log.d("converted", "${bitmap?.width}, ${bitmap?.height}")
 
         bitmap?.let {
 
@@ -64,7 +66,6 @@ class LoadImage(
         minimumDesiredBitmapWidth: Int,
         minimumDesiredBitmapHeight: Int
     ): Bitmap? {
-        var bitmap: Bitmap?
         val stream = BufferedInputStream(s, 8 * 1024)
         val decodeBitmapOptions = BitmapFactory.Options()
         if (minimumDesiredBitmapWidth > 0 && minimumDesiredBitmapHeight > 0) {
@@ -76,7 +77,7 @@ class LoadImage(
             val originalWidth: Int = decodeBoundsOptions.outWidth
             val originalHeight: Int = decodeBoundsOptions.outHeight
 
-            Log.d("original", "$originalWidth, $originalHeight")
+//            Log.d("original", "$originalWidth, $originalHeight")
             val scale =
                 (originalWidth / minimumDesiredBitmapWidth).coerceAtMost(originalHeight / minimumDesiredBitmapHeight)
 
