@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.util.DisplayMetrics
 import android.util.Log
 import android.widget.ImageView
 import android.widget.TextView
@@ -32,9 +33,9 @@ class ImageDisplayActivity : AppCompatActivity() {
     var height: Int = 0
     var downloadId: Long = -1L
     lateinit var id: String
-    var descriptionText: String? = null
+    private var descriptionText: String? = null
     lateinit var raw: String
-    lateinit var downloadLink: String
+    private lateinit var downloadLink: String
     private val set = ConstraintSet()
     lateinit var coordinatorLayout: CoordinatorLayout
     private lateinit var bitmap: String
@@ -186,28 +187,34 @@ class ImageDisplayActivity : AppCompatActivity() {
 
     private fun setImage() {
         val imageDisplay: ImageView = findViewById(R.id.image_display)
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val mWidth = displayMetrics.widthPixels
+        val mHeight = (mWidth * height) / width
+        Log.d("preview", "$mWidth, $mHeight")
 
-        val image = SearchPicApplication.accessCache()[bitmap]
-        image?.let {
-            val height = (resources.displayMetrics.widthPixels * height) / width
-            //TODO Bitmap creation, scaling operations are resource consuming and hence needs to be executed in bg thread
-            imageDisplay.setImageBitmap(
-                Bitmap.createScaledBitmap(
-                    it,
-                    resources.displayMetrics.widthPixels,
-                    height,
-                    false
-                )
-            )
-        }
-        //TODO Bitmap creation, scaling operations are resource consuming and hence needs to be executed in bg thread
         val mBitmap = getBitmapFromDiskCache(id.toLowerCase(Locale.ENGLISH))
+
         if (mBitmap != null)
             imageDisplay.setImageBitmap(mBitmap)
         else {
+            val image = SearchPicApplication.accessCache()[bitmap]
+            image?.let {
+                Thread(Runnable {
+                    val b = Bitmap.createScaledBitmap(it, mWidth, mHeight, false)
+                    Log.d("inside thread"," ")
+                    runOnUiThread {
+                        Log.d("ui thread"," ")
+                        imageDisplay.setImageBitmap(b)
+                    }
+                }).start()
+            }
+
             LoadImage(WeakReference(imageDisplay), WeakReference(this)).execute(
                 raw,
-                "image",
+                mWidth.toString(),
+                mHeight.toString(),
+                "disk",
                 id.toLowerCase(Locale.ENGLISH)
             )
         }

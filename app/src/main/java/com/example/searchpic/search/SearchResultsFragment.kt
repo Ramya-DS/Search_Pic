@@ -3,6 +3,8 @@ package com.example.searchpic.search
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.DisplayMetrics
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -63,12 +65,16 @@ class SearchResultsFragment : Fragment() {
         val spanCount =
             if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) 2 else 3
         val mLayoutManager = StaggeredGridLayoutManager(spanCount, 1)
+        val displayMetrics = DisplayMetrics()
+        activity!!.windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val width = displayMetrics.widthPixels/spanCount
+        Log.d("fragment", width.toString())
         mLayoutManager.gapStrategy =
             StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS;
         recyclerView.layoutManager = mLayoutManager
         recyclerView.setHasFixedSize(true)
         recyclerView.itemAnimator = null
-        adapter = ImageAdapter(activity as OnImageClickedListener, WeakReference(activity!!))
+        adapter = ImageAdapter(activity as OnImageClickedListener, WeakReference(activity!!),width)
         recyclerView.adapter = adapter
 
         var pastVisibleItems = 0

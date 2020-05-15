@@ -24,7 +24,7 @@ import java.lang.ref.WeakReference
 
 class ImageAdapter(
     val onImageClickedListener: OnImageClickedListener,
-    private val activity: WeakReference<Activity>
+    private val activity: WeakReference<Activity>, private val width: Int
 ) :
     RecyclerView.Adapter<ImageAdapter.ImageViewHolder>() {
 
@@ -71,14 +71,7 @@ class ImageAdapter(
     override fun onBindViewHolder(holder: ImageViewHolder, position: Int) {
         val result = resultList[position]
         holder.image = result
-        holder.imageView.setImageBitmap(
-            getBitmapFromVectorDrawable(
-                R.drawable.placeholder,
-                50, 50
-            )
-        )
-
-        setBitmapInHolder(holder, result)
+        setImageToHolder(holder, result)
     }
 
     override fun onBindViewHolder(
@@ -94,14 +87,8 @@ class ImageAdapter(
             val mImage: ImageDetails?
             mImage = bundle.getParcelable("newImage")
             mImage?.let {
-                holder.imageView.setImageBitmap(
-                    getBitmapFromVectorDrawable(
-                        R.drawable.placeholder,
-                        50, 50
-                    )
-                )
                 holder.image = it
-                setBitmapInHolder(holder, it)
+                setImageToHolder(holder, it)
             }
         }
     }
@@ -169,9 +156,9 @@ class ImageAdapter(
         holder.imageTask?.cancel(true)
     }
 
-    private fun getBitmapFromVectorDrawable(drawableId: Int, width: Int, height: Int): Bitmap? {
+    private fun getBitmapFromVectorDrawable(width: Int, height: Int): Bitmap? {
         var drawable =
-            ContextCompat.getDrawable(activity.get()!!, drawableId)
+            ContextCompat.getDrawable(activity.get()!!, R.drawable.placeholder)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             drawable = DrawableCompat.wrap(drawable!!).mutate()
         }
@@ -186,20 +173,48 @@ class ImageAdapter(
         return bitmap
     }
 
-    private fun setBitmapInHolder(holder: ImageViewHolder, image: ImageDetails) {
-        val bitmap = SearchPicApplication.accessCache()[image.urls.small]
+    private fun setBitmapInHolder(
+        holder: ImageViewHolder,
+        url: String,
+        desiredWidth: Int,
+        desiredHeight: Int
+    ) {
+        val bitmap = SearchPicApplication.accessCache()[url]
         if (bitmap == null) {
             holder.imageTask?.cancel(true)
             holder.imageTask = LoadImage(WeakReference(holder.imageView), activity)
-            Log.d("main", " ")
-            holder.imageTask!!.execute(image.urls.small, "thumb")
+            holder.imageTask!!.execute(
+                url,
+                desiredWidth.toString(),
+                desiredHeight.toString(),
+                "in memory"
+            )
         } else
             holder.imageView.setImageBitmap(bitmap)
 
-        val ratio = String.format("%d:%d", image.width, image.height)
-        Log.d("view", "${image.width} ${image.height}")
+        val ratio = String.format("%d:%d", desiredWidth, desiredHeight)
         set.clone(holder.mConstraintLayout)
         set.setDimensionRatio(holder.imageView.id, ratio)
         set.applyTo(holder.mConstraintLayout)
     }
+
+    private fun calculateHeight(finalWidth: Int, currentWidth: Int, currentHeight: Int): Int =
+        ((finalWidth * currentHeight) / currentWidth) - 8
+
+    private fun calculateWidth(): Int = width - 8
+
+    private fun setImageToHolder(holder: ImageViewHolder, imageDetails: ImageDetails) {
+        val desiredWidth = calculateWidth()
+        Log.d("current", "${imageDetails.width}, ${imageDetails.height}")
+        val desiredHeight = calculateHeight(desiredWidth, imageDetails.width, imageDetails.height)
+        Log.d("desired", "$desiredWidth, $desiredHeight")
+        holder.imageView.setImageBitmap(
+            getBitmapFromVectorDrawable(
+                desiredWidth,
+                desiredHeight
+            )
+        )
+        setBitmapInHolder(holder, imageDetails.urls.small, desiredWidth, desiredHeight)
+    }
+    //(finalWidth * currentHeight.toDouble()) / currentWidth.toDouble()).toInt()) - 8
 }
