@@ -3,6 +3,7 @@ package com.example.searchpic.search
 import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -183,12 +184,17 @@ class ImageAdapter(
         if (bitmap == null) {
             holder.imageTask?.cancel(true)
             holder.imageTask = LoadImage(WeakReference(holder.imageView), activity)
-            holder.imageTask!!.execute(
-                url,
+            holder.imageTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,url,
                 desiredWidth.toString(),
                 desiredHeight.toString(),
                 "in memory"
             )
+//                execute(
+//                url,
+//                desiredWidth.toString(),
+//                desiredHeight.toString(),
+//                "in memory"
+//            )
         } else
             holder.imageView.setImageBitmap(bitmap)
 

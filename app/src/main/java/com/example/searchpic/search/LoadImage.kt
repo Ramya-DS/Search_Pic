@@ -4,6 +4,7 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.AsyncTask
+import android.util.Log
 import android.widget.ImageView
 import com.example.searchpic.SearchPicApplication
 import java.io.BufferedInputStream
@@ -24,17 +25,20 @@ class LoadImage(
         val width = params[1]!!
         val height = params[2]!!
         val storage = params[3]!!
-        val inputStream: InputStream?
+        var inputStream: InputStream? = null
 
-        inputStream = try {
-            URL(url).openStream()
+        try {
+            inputStream = URL(url).openStream()
+            Log.d("check", "input stream")
         } catch (e: Exception) {
-            null
+            Log.d("cancel", " ")
+            this.cancel(true)
         }
 
         val bitmap =
             inputStream?.let { createScaledBitmapFromStream(it, width.toInt(), height.toInt()) }
 
+        Log.d("check", "${bitmap?.width} ${bitmap?.height}")
         bitmap?.let {
 
             if (storage == "in memory")
@@ -77,24 +81,15 @@ class LoadImage(
             val originalWidth: Int = decodeBoundsOptions.outWidth
             val originalHeight: Int = decodeBoundsOptions.outHeight
 
-//            Log.d("original", "$originalWidth, $originalHeight")
             val scale =
                 (originalWidth / minimumDesiredBitmapWidth).coerceAtMost(originalHeight / minimumDesiredBitmapHeight)
 
-            return if (scale < 1) {
-                Bitmap.createScaledBitmap(
-                    BitmapFactory.decodeStream(stream),
-                    minimumDesiredBitmapWidth,
-                    minimumDesiredBitmapHeight,
-                    false
-                )
-            } else {
+            if (scale > 1) {
                 decodeBitmapOptions.inSampleSize = 1.coerceAtLeast(scale)
                 BitmapFactory.decodeStream(stream, null, decodeBitmapOptions)
-            }
-
+            } else
+                return BitmapFactory.decodeStream(stream)
         }
-
         return null
 
     }

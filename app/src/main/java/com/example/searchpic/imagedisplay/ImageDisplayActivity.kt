@@ -14,6 +14,7 @@ import android.util.Log
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.WorkerThread
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
@@ -26,6 +27,8 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
 import java.lang.ref.WeakReference
 import java.util.*
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadPoolExecutor
 
 class ImageDisplayActivity : AppCompatActivity() {
 
@@ -39,6 +42,7 @@ class ImageDisplayActivity : AppCompatActivity() {
     private val set = ConstraintSet()
     lateinit var coordinatorLayout: CoordinatorLayout
     private lateinit var bitmap: String
+    lateinit var executor: ThreadPoolExecutor
 
     companion object {
         val permissions = arrayOf(
@@ -83,6 +87,8 @@ class ImageDisplayActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_image_display)
+
+        executor = Executors.newFixedThreadPool(5) as ThreadPoolExecutor
 
         coordinatorLayout = findViewById(R.id.coordinatorLayout)
         val toolbar: MaterialToolbar = findViewById(R.id.top_actionBar)
@@ -192,32 +198,9 @@ class ImageDisplayActivity : AppCompatActivity() {
         val mWidth = displayMetrics.widthPixels
         val mHeight = (mWidth * height) / width
         Log.d("preview", "$mWidth, $mHeight")
-        Thread(Runnable {
-            val mBitmap = getBitmapFromDiskCache(id.toLowerCase(Locale.ENGLISH))
-            if (mBitmap != null)
-                runOnUiThread {
-                    imageDisplay.setImageBitmap(mBitmap)
-                }
-            else {
-                val image = SearchPicApplication.accessCache()[bitmap]
-                image?.let {
-                    val b = Bitmap.createScaledBitmap(it, mWidth, mHeight, false)
-                    Log.d("inside thread", " ")
-                    runOnUiThread {
-                        Log.d("ui thread", " ")
-                        imageDisplay.setImageBitmap(b)
-                    }
-                }
 
-                LoadImage(WeakReference(imageDisplay), WeakReference(this)).execute(
-                    raw,
-                    mWidth.toString(),
-                    mHeight.toString(),
-                    "disk",
-                    id.toLowerCase(Locale.ENGLISH)
-                )
-            }
-        }).start()
+        imageFetch(imageDisplay, mWidth, mHeight)
+
         val constraintLayout = findViewById<ConstraintLayout>(R.id.displayConstraint)
         val ratio = String.format("%d:%d", width, height)
         set.clone(constraintLayout)
@@ -259,6 +242,40 @@ class ImageDisplayActivity : AppCompatActivity() {
 
     private fun getBitmapFromDiskCache(key: String): Bitmap? {
         val app = (application as SearchPicApplication)
-        return app.getBitmap(key)
+        if (app.containsKey(key))
+            return app.getBitmap(key)
+        return null
+    }
+
+
+    private fun imageFetch(imageDisplay: ImageView, mWidth: Int, mHeight: Int) {
+        executor.execute(Runnable {
+            val diskImage = getBitmapFromDiskCache(id.toLowerCase(Locale.ENGLISH))
+            if (diskImage == null) {
+                val cacheImage = SearchPicApplication.accessCache()[bitmap]
+                cacheImage?.let {
+                    val scaledBitmap = Bitmap.createScaledBitmap(it, mWidth, mHeight, false)
+                    runOnUiThread {
+                        imageDisplay.setImageBitmap(scaledBitmap)
+                    }
+                }
+                LoadImage(WeakReference(imageDisplay), WeakReference(this)).execute(
+                    raw,
+                    mWidth.toString(),
+                    mHeight.toString(),
+                    "disk",
+                    id.toLowerCase(Locale.ENGLISH)
+                )
+            } else {
+                runOnUiThread {
+                    imageDisplay.setImageBitmap(diskImage)
+                }
+            }
+        })
+    }
+
+    override fun onStop() {
+        super.onStop()
+        executor.shutdown()
     }
 }
