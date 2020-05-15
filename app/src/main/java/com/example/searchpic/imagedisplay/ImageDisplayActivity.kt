@@ -192,32 +192,32 @@ class ImageDisplayActivity : AppCompatActivity() {
         val mWidth = displayMetrics.widthPixels
         val mHeight = (mWidth * height) / width
         Log.d("preview", "$mWidth, $mHeight")
-
-        val mBitmap = getBitmapFromDiskCache(id.toLowerCase(Locale.ENGLISH))
-
-        if (mBitmap != null)
-            imageDisplay.setImageBitmap(mBitmap)
-        else {
-            val image = SearchPicApplication.accessCache()[bitmap]
-            image?.let {
-                Thread(Runnable {
+        Thread(Runnable {
+            val mBitmap = getBitmapFromDiskCache(id.toLowerCase(Locale.ENGLISH))
+            if (mBitmap != null)
+                runOnUiThread {
+                    imageDisplay.setImageBitmap(mBitmap)
+                }
+            else {
+                val image = SearchPicApplication.accessCache()[bitmap]
+                image?.let {
                     val b = Bitmap.createScaledBitmap(it, mWidth, mHeight, false)
-                    Log.d("inside thread"," ")
+                    Log.d("inside thread", " ")
                     runOnUiThread {
-                        Log.d("ui thread"," ")
+                        Log.d("ui thread", " ")
                         imageDisplay.setImageBitmap(b)
                     }
-                }).start()
-            }
+                }
 
-            LoadImage(WeakReference(imageDisplay), WeakReference(this)).execute(
-                raw,
-                mWidth.toString(),
-                mHeight.toString(),
-                "disk",
-                id.toLowerCase(Locale.ENGLISH)
-            )
-        }
+                LoadImage(WeakReference(imageDisplay), WeakReference(this)).execute(
+                    raw,
+                    mWidth.toString(),
+                    mHeight.toString(),
+                    "disk",
+                    id.toLowerCase(Locale.ENGLISH)
+                )
+            }
+        }).start()
         val constraintLayout = findViewById<ConstraintLayout>(R.id.displayConstraint)
         val ratio = String.format("%d:%d", width, height)
         set.clone(constraintLayout)
